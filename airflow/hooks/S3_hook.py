@@ -223,6 +223,7 @@ class S3Hook(AwsHook):
             by S3 and will be stored in an encrypted form while at rest in S3.
         :type encrypt: bool
         """
+        connection_object = self.get_connection(self.aws_conn_id)
         if not bucket_name:
             (bucket_name, key) = self.parse_s3_url(key)
 
@@ -230,13 +231,16 @@ class S3Hook(AwsHook):
             raise ValueError("The key {key} already exists.".format(key=key))
 
         extra_args={}
+        if 's3_transfer_upload_extra_args' in connection_object.extra_dejson
+            extra_args.update(connection_object.extra_dejson.get('s3_transfer_upload_extra_args'))
         if encrypt:
             extra_args['ServerSideEncryption'] = "AES256"
 
         client = self.get_conn()
         client.upload_file(filename, bucket_name, key, ExtraArgs=extra_args)
 
-    def load_string(self, 
+    
+    load_string(self, 
                     string_data,
                     key, 
                     bucket_name=None,
@@ -293,6 +297,7 @@ class S3Hook(AwsHook):
             by S3 and will be stored in an encrypted form while at rest in S3.
         :type encrypt: bool
         """
+        connection_object = self.get_connection(self.aws_conn_id)
         if not bucket_name:
             (bucket_name, key) = self.parse_s3_url(key)
         
@@ -300,6 +305,8 @@ class S3Hook(AwsHook):
             raise ValueError("The key {key} already exists.".format(key=key))
         
         extra_args={}
+        if 's3_transfer_upload_extra_args' in connection_object.extra_dejson
+            extra_args.update(connection_object.extra_dejson.get('s3_transfer_upload_extra_args'))
         if encrypt:
             extra_args['ServerSideEncryption'] = "AES256"
         
