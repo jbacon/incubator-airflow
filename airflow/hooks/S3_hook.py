@@ -183,7 +183,8 @@ class S3Hook(AwsHook):
                   key,
                   bucket_name=None,
                   replace=False,
-                  encrypt=False):
+                  encrypt=False,
+                  upload_args={}):
         """
         Loads a local file to S3
 
@@ -200,19 +201,26 @@ class S3Hook(AwsHook):
         :param encrypt: If True, the file will be encrypted on the server-side
             by S3 and will be stored in an encrypted form while at rest in S3.
         :type encrypt: bool
+        :param upload_args: Upload arguments to pass to the s3 upload. See: boto3.s3.transfer.S3Transfer.ALLOWED_UPLOAD_ARGS
+        :type upload_args: dictionary
         """
+        connection_object = self.get_connection(self.aws_conn_id)
         if not bucket_name:
             (bucket_name, key) = self.parse_s3_url(key)
 
         if not replace and self.check_for_key(key, bucket_name):
             raise ValueError("The key {key} already exists.".format(key=key))
 
-        extra_args={}
+        default_upload_args={}
+        if 's3_transfer_upload_args' in connection_object.extra_dejson
+            default_upload_args.update(connection_object.extra_dejson.get('s3_transfer_upload_args'))
         if encrypt:
-            extra_args['ServerSideEncryption'] = "AES256"
+            default_upload_args['ServerSideEncryption'] = "AES256"
+        applied_upload_args = default_upload_args
+        applied_upload_args.update(upload_args)
 
         client = self.get_conn()
-        client.upload_file(filename, bucket_name, key, ExtraArgs=extra_args)
+        client.upload_file(filename, bucket_name, key, ExtraArgs=applied_upload_args)
 
     def load_string(self, 
                     string_data,
@@ -220,7 +228,8 @@ class S3Hook(AwsHook):
                     bucket_name=None,
                     replace=False,
                     encrypt=False,
-                    encoding='utf-8'):
+                    encoding='utf-8',
+                    upload_args={}):
         """
         Loads a string to S3
 
@@ -239,18 +248,25 @@ class S3Hook(AwsHook):
         :param encrypt: If True, the file will be encrypted on the server-side
             by S3 and will be stored in an encrypted form while at rest in S3.
         :type encrypt: bool
+        :param upload_args: Upload arguments to pass to the s3 upload. See: boto3.s3.transfer.S3Transfer.ALLOWED_UPLOAD_ARGS
+        :type upload_args: dictionary
         """
+        connection_object = self.get_connection(self.aws_conn_id)
         if not bucket_name:
             (bucket_name, key) = self.parse_s3_url(key)
         
         if not replace and self.check_for_key(key, bucket_name):
             raise ValueError("The key {key} already exists.".format(key=key))
-        
-        extra_args={}
+
+        default_upload_args={}
+        if 's3_transfer_upload_args' in connection_object.extra_dejson
+            default_upload_args.update(connection_object.extra_dejson.get('s3_transfer_upload_args'))
         if encrypt:
-            extra_args['ServerSideEncryption'] = "AES256"
+            default_upload_args['ServerSideEncryption'] = "AES256"
+        applied_upload_args = default_upload_args
+        applied_upload_args.update(upload_args)
         
         filelike_buffer = BytesIO(string_data.encode(encoding))
         
         client = self.get_conn()
-        client.upload_fileobj(filelike_buffer, bucket_name, key, ExtraArgs=extra_args)
+        client.upload_fileobj(filelike_buffer, bucket_name, key, ExtraArgs=applied_upload_args)
