@@ -183,7 +183,8 @@ class S3Hook(AwsHook):
                   key,
                   bucket_name=None,
                   replace=False,
-                  encrypt=False):
+                  encrypt=False,
+                  extra_args={}):
         """
         Loads a local file to S3
 
@@ -207,12 +208,13 @@ class S3Hook(AwsHook):
 
         if not replace and self.check_for_key(key, bucket_name):
             raise ValueError("The key {key} already exists.".format(key=key))
-
-        extra_args={}
+        
+        default_extra_args={}
         if 's3_transfer_upload_extra_args' in connection_object.extra_dejson
-            extra_args.update(connection_object.extra_dejson.get('s3_transfer_upload_extra_args'))
+            default_extra_args.update(connection_object.extra_dejson.get('s3_transfer_upload_extra_args'))
         if encrypt:
-            extra_args['ServerSideEncryption'] = "AES256"
+            default_extra_args['ServerSideEncryption'] = "AES256"
+        extra_args.update(default_extra_args)
 
         client = self.get_conn()
         client.upload_file(filename, bucket_name, key, ExtraArgs=extra_args)
@@ -223,7 +225,8 @@ class S3Hook(AwsHook):
                     bucket_name=None,
                     replace=False,
                     encrypt=False,
-                    encoding='utf-8'):
+                    encoding='utf-8',
+                    extra_args={}):
         """
         Loads a string to S3
 
@@ -249,12 +252,13 @@ class S3Hook(AwsHook):
         
         if not replace and self.check_for_key(key, bucket_name):
             raise ValueError("The key {key} already exists.".format(key=key))
-        
-        extra_args={}
+
+        default_extra_args={}
         if 's3_transfer_upload_extra_args' in connection_object.extra_dejson
-            extra_args.update(connection_object.extra_dejson.get('s3_transfer_upload_extra_args'))
+            default_extra_args.update(connection_object.extra_dejson.get('s3_transfer_upload_extra_args'))
         if encrypt:
-            extra_args['ServerSideEncryption'] = "AES256"
+            default_extra_args['ServerSideEncryption'] = "AES256"
+        extra_args.update(default_extra_args)
         
         filelike_buffer = BytesIO(string_data.encode(encoding))
         
